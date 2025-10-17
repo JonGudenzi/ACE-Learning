@@ -1,0 +1,5 @@
+body { font-family: system-ui, Arial, sans-serif; padding: 16px; }
+
+#nameList { margin-top: 12px; }
+
+.done { text-decoration: line-through; }
