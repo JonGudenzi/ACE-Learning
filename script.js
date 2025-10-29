@@ -1,93 +1,144 @@
-const inputEl = document.getElementById("username");
+const inputEl = document.getElementById("input");
 const btnEl = document.getElementById("submit");
-const listEl = document.getElementById("nameList");
-const errorText = document.getElementById("errorMsg");
+const errorEl = document.getElementById("errorMsg");
+const nameListEl = document.getElementById("nameList");
+const STORAGE_KEY = "nameList";
 
-const addingName = () => {
-  const nameText = inputEl.value.trim();
-  if (nameText !== "") {
-    errorText.textContent = "";
-    const itemEl = document.createElement("li");
-    const nameSpan = document.createElement("span");
-
-    const deleteBtn = document.createElement("button");
-    const editBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    editBtn.type = "button";
-
-    nameSpan.classList.add("name-text");
-    nameSpan.textContent = nameText;
-
-    editBtn.classList.add("edit-btn");
-    editBtn.textContent = "Edit";
-    deleteBtn.classList.add("delete-btn");
-    deleteBtn.textContent = "Delete";
-    itemEl.appendChild(nameSpan);
-    itemEl.appendChild(editBtn);
-    itemEl.appendChild(deleteBtn);
-    listEl.appendChild(itemEl);
-    inputEl.value = "";
-    inputEl.focus();
-  } else {
-    errorText.textContent = "You must enter a name";
-    inputEl.focus();
-    return;
-  }
-};
-listEl.addEventListener("click", (e) => {
-  const li = e.target.closest("li");
-  if (!li) return;
-
-  // Delete
-  if (e.target.closest(".delete-btn")) {
-    li.remove();
-    return;
-  }
-
-  // Edit/Save
-  const editBtn = e.target.closest(".edit-btn");
-  if (editBtn) {
-    const nameSpan = li.querySelector(".name-text");
-    const input = li.querySelector("input");
-
-    if (editBtn.textContent === "Edit") {
-      // ENTER EDIT MODE
-      const editInputField = document.createElement("input");
-      editInputField.type = "text";
-      editInputField.value = nameSpan.textContent;
-      nameSpan.replaceWith(editInputField);
-      editBtn.textContent = "Save";
-      editInputField.focus();
-      return;
+const addName = () => {
+    const nameInputText = inputEl.value.trim();
+    if (nameInputText === "") {
+        errorEl.textContent = "You must enter a name";
+        inputEl.focus();
+        return;
     } else {
-      // SAVE MODE
-      const newText = input.value.trim();
-      const updatedNameSpan = document.createElement("span");
-      updatedNameSpan.classList.add("name-text");
-      updatedNameSpan.textContent = newText;
-      input.replaceWith(updatedNameSpan);
-      editBtn.textContent = "Edit";
-      return;
+        errorEl.textContent = "";
+        const liEl = document.createElement("li");
+        const delBtn = document.createElement("button");
+        const editBtn = document.createElement("button");
+        editBtn.classList.add("edit-btn");
+        editBtn.textContent = "Edit";
+        delBtn.classList.add("delete-btn");
+        delBtn.textContent = "X";
+        const spanEl = document.createElement("span");
+        spanEl.classList.add("name-text");
+        spanEl.textContent = nameInputText;
+        liEl.appendChild(spanEl);
+        liEl.appendChild(editBtn);
+        liEl.appendChild(delBtn);
+        nameListEl.appendChild(liEl);
+        saveNames();
+        inputEl.value = "";
+        inputEl.focus();
+    }
+};
+function saveNames () {
+  const nameSpans = document.querySelectorAll(".name-text");
+  const names = [];
+  for (const span of nameSpans) {
+  names.push(span.textContent);
+}
+  const stringNames = JSON.stringify(names);
+    localStorage.setItem(STORAGE_KEY, stringNames);
+};
+
+function loadNames () {
+ let keyNames = localStorage.getItem(STORAGE_KEY);
+  if (!keyNames) {
+    keyNames = [];
+  } else {
+    keyNames = JSON.parse(keyNames);
+    for (const name of keyNames) {
+      inputEl.value = name;
+      addName();
+      inputEl.value = "";
     }
   }
+};
 
-  // Toggle done on bare <li> clicks
-  if (e.target.tagName === "LI") {
-    e.target.classList.toggle("done");
-  }
+btnEl.addEventListener("click", addName);
+
+inputEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        addName();
+    }
 });
 
-btnEl.addEventListener("click", addingName);
+const delEditSave = (e) => {
+    if (e.target.matches(".delete-btn")) {
+        const liEl = e.target.closest("li");
+        liEl.remove();
+        inputEl.focus();
+    } else if (e.target.matches(".edit-btn") && e.target.textContent === "Edit") {
+        const liEl = e.target.closest("li");
+        const spanEl = liEl.querySelector(".name-text");
+        const editBtnEl = liEl.querySelector(".edit-btn");
+        const newInputEl = document.createElement("input"); 
+        newInputEl.value = spanEl.textContent;
+        liEl.dataset.original = spanEl.textContent;
+        spanEl.replaceWith(newInputEl);
+        editBtnEl.textContent = "Save";
+        errorEl.textContent = "";
+        newInputEl.focus();
 
-inputEl.addEventListener("input", () => {
-  if (inputEl.value.trim() !== "") {
-    errorText.textContent = "";
-  }
+    } else if (e.target.matches(".edit-btn") && e.target.textContent === "Save") {
+        const liEl = e.target.closest("li");
+        const newInput = liEl.querySelector("input");
+        const saveBtnEl = liEl.querySelector(".edit-btn");
+        if (newInput.value.trim() === "") {
+            errorEl.textContent = "You must enter a name";
+            newInput.focus();
+        } else {
+            const newSpanEl = document.createElement("span");
+            newSpanEl.classList.add("name-text");
+            newSpanEl.textContent = newInput.value.trim();
+            newInput.replaceWith(newSpanEl);
+            liEl.dataset.original = newSpanEl.textContent;
+            saveBtnEl.textContent = "Edit";
+            errorEl.textContent = "";
+            inputEl.focus();
+        }
+
+    }
+}
+nameListEl.addEventListener("click", delEditSave);
+
+nameListEl.addEventListener("keydown", function (e) {
+if (e.key !== "Enter"){
+        return;
+    } if (!e.target.matches("input")){
+        return;
+    }
+    else {
+        const liEl = e.target.closest("li");
+        const newInput = liEl.querySelector("input");
+        const saveBtnEl = liEl.querySelector(".edit-btn");
+        if (newInput) {
+            saveBtnEl.click();
+        }
+        e.preventDefault();
+    }
 });
 
-inputEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    addingName();
-  };
+nameListEl.addEventListener("keydown", function(e) {
+    if (e.key !== "Escape"){
+        return;
+    } if (!e.target.matches("input")){
+        return;
+    } else {
+        const liEl = e.target.closest("li");
+        const input = liEl.querySelector("input");
+        const btn = liEl.querySelector(".edit-btn");
+        const storedDataText = liEl.dataset.original;
+        const spanEl = document.createElement("span");
+        spanEl.classList.add("name-text");
+        spanEl.textContent = storedDataText;
+        input.replaceWith(spanEl);
+        btn.textContent = "Edit";
+        errorEl.textContent = "";
+        inputEl.focus();
+        e.preventDefault();
+    }
 });
+
+loadNames();
